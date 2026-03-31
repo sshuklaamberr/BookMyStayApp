@@ -32,7 +32,6 @@ public class BookMyStayApp {
         }
     }
 
-    // UC5 - Booking Class
     static class Booking {
         static AtomicInteger counter = new AtomicInteger(1000);
         String bookingId, guestName;
@@ -111,7 +110,25 @@ public class BookMyStayApp {
         if (!found) System.out.println("[Info] No available rooms found.");
     }
 
-    // UC5 - Make Booking
+    // UC6 - Confirmation Slip
+    static void printConfirmation(Booking b) {
+        long nights = ChronoUnit.DAYS.between(b.checkIn, b.checkOut);
+        System.out.println("\n╔══════════════════════════════╗");
+        System.out.println("║      BOOKING CONFIRMED       ║");
+        System.out.println("╚══════════════════════════════╝");
+        System.out.println("  Booking ID  : " + b.bookingId);
+        System.out.println("  Guest       : " + b.guestName);
+        System.out.println("  Room        : " + b.room.roomNumber + " (" + b.room.type + ")");
+        System.out.println("  Check-In    : " + b.checkIn);
+        System.out.println("  Check-Out   : " + b.checkOut);
+        System.out.println("  Nights      : " + nights);
+        System.out.printf ("  Room Cost   : Rs.%.2f x %d = Rs.%.2f%n",
+                b.room.pricePerNight, nights, nights * b.room.pricePerNight);
+        System.out.printf ("  TOTAL       : Rs.%.2f%n", b.totalAmount);
+        System.out.println("  Status      : CONFIRMED");
+        System.out.println("══════════════════════════════════");
+    }
+
     static void makeBooking() {
         System.out.println("\n===== MAKE A BOOKING =====");
         System.out.print("Guest Name: ");
@@ -123,7 +140,7 @@ public class BookMyStayApp {
 
         if (room == null) { System.out.println("[Error] Room not found."); return; }
         if (room.status != RoomStatus.AVAILABLE) {
-            System.out.println("[Error] Room " + rNo + " is not available."); return;
+            System.out.println("[Error] Room not available."); return;
         }
 
         System.out.print("Check-In  (YYYY-MM-DD): ");
@@ -135,8 +152,7 @@ public class BookMyStayApp {
         Booking booking = new Booking(name, room, ci, co);
         room.status = RoomStatus.BOOKED;
         bookings.add(booking);
-        System.out.println("[Success] Booking created! ID: " + booking.bookingId);
-        System.out.println(booking);
+        printConfirmation(booking); // UC6
     }
 
     static void runMainMenu() {
