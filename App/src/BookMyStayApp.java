@@ -10,7 +10,6 @@ public class BookMyStayApp {
         AddOnService(int price) { this.price = price; }
     }
 
-    // UC3 - Room Class
     static class Room {
         int roomNumber;
         RoomType type;
@@ -62,15 +61,32 @@ public class BookMyStayApp {
         for (Room r : rooms) System.out.println(r);
     }
 
+    // UC4 - Search Available Rooms
+    static void searchAvailableRooms() {
+        System.out.println("\n===== SEARCH AVAILABLE ROOMS =====");
+        System.out.print("Filter by type [SINGLE / DOUBLE / SUITE] or press Enter for all: ");
+        String filter = sc.nextLine().trim().toUpperCase();
+        boolean found = false;
+        for (Room r : rooms) {
+            if (r.status != RoomStatus.AVAILABLE) continue;
+            if (!filter.isEmpty() && !r.type.name().equals(filter)) continue;
+            System.out.println(r);
+            found = true;
+        }
+        if (!found) System.out.println("[Info] No available rooms match your filter.");
+    }
+
     static void runMainMenu() {
         while (true) {
             System.out.println("\n========= MAIN MENU =========");
             System.out.println("1. View All Rooms");
+            System.out.println("2. Search Available Rooms");
             System.out.println("0. Exit");
             System.out.print("Choice: ");
             String ch = sc.nextLine().trim();
             switch (ch) {
-                case "1": viewAllRooms(); break;
+                case "1": viewAllRooms();         break;
+                case "2": searchAvailableRooms(); break;
                 case "0":
                     System.out.println("Thank you! Goodbye!");
                     return;
