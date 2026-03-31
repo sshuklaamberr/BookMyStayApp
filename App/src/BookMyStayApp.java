@@ -1,4 +1,7 @@
 import java.util.*;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BookMyStayApp {
 
@@ -29,8 +32,41 @@ public class BookMyStayApp {
         }
     }
 
-    static final List<Room> rooms = new ArrayList<>();
-    static final Scanner sc = new Scanner(System.in);
+    // UC5 - Booking Class
+    static class Booking {
+        static AtomicInteger counter = new AtomicInteger(1000);
+        String bookingId, guestName;
+        Room room;
+        LocalDate checkIn, checkOut;
+        double totalAmount;
+        boolean isCancelled = false;
+        List<AddOnService> addOns = new ArrayList<>();
+
+        Booking(String guestName, Room room, LocalDate checkIn, LocalDate checkOut) {
+            this.bookingId = "BMS" + counter.incrementAndGet();
+            this.guestName = guestName;
+            this.room      = room;
+            this.checkIn   = checkIn;
+            this.checkOut  = checkOut;
+            calculateTotal();
+        }
+
+        void calculateTotal() {
+            long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
+            totalAmount = nights * room.pricePerNight;
+            for (AddOnService s : addOns) totalAmount += s.price;
+        }
+
+        public String toString() {
+            return String.format("ID: %-8s | Guest: %-15s | Room: %d | %s to %s | Rs.%.2f | %s",
+                    bookingId, guestName, room.roomNumber, checkIn, checkOut,
+                    totalAmount, isCancelled ? "CANCELLED" : "CONFIRMED");
+        }
+    }
+
+    static final List<Room>    rooms    = new ArrayList<>();
+    static final List<Booking> bookings = new ArrayList<>();
+    static final Scanner       sc       = new Scanner(System.in);
 
     public static void main(String[] args) {
         initializeRooms();
@@ -61,10 +97,9 @@ public class BookMyStayApp {
         for (Room r : rooms) System.out.println(r);
     }
 
-    // UC4 - Search Available Rooms
     static void searchAvailableRooms() {
         System.out.println("\n===== SEARCH AVAILABLE ROOMS =====");
-        System.out.print("Filter by type [SINGLE / DOUBLE / SUITE] or press Enter for all: ");
+        System.out.print("Filter by type [SINGLE / DOUBLE / SUITE] or Enter for all: ");
         String filter = sc.nextLine().trim().toUpperCase();
         boolean found = false;
         for (Room r : rooms) {
@@ -73,7 +108,35 @@ public class BookMyStayApp {
             System.out.println(r);
             found = true;
         }
-        if (!found) System.out.println("[Info] No available rooms match your filter.");
+        if (!found) System.out.println("[Info] No available rooms found.");
+    }
+
+    // UC5 - Make Booking
+    static void makeBooking() {
+        System.out.println("\n===== MAKE A BOOKING =====");
+        System.out.print("Guest Name: ");
+        String name = sc.nextLine().trim();
+
+        System.out.print("Room Number: ");
+        int rNo = Integer.parseInt(sc.nextLine().trim());
+        Room room = rooms.stream().filter(r -> r.roomNumber == rNo).findFirst().orElse(null);
+
+        if (room == null) { System.out.println("[Error] Room not found."); return; }
+        if (room.status != RoomStatus.AVAILABLE) {
+            System.out.println("[Error] Room " + rNo + " is not available."); return;
+        }
+
+        System.out.print("Check-In  (YYYY-MM-DD): ");
+        LocalDate ci = LocalDate.parse(sc.nextLine().trim());
+
+        System.out.print("Check-Out (YYYY-MM-DD): ");
+        LocalDate co = LocalDate.parse(sc.nextLine().trim());
+
+        Booking booking = new Booking(name, room, ci, co);
+        room.status = RoomStatus.BOOKED;
+        bookings.add(booking);
+        System.out.println("[Success] Booking created! ID: " + booking.bookingId);
+        System.out.println(booking);
     }
 
     static void runMainMenu() {
@@ -81,12 +144,14 @@ public class BookMyStayApp {
             System.out.println("\n========= MAIN MENU =========");
             System.out.println("1. View All Rooms");
             System.out.println("2. Search Available Rooms");
+            System.out.println("3. Make a Booking");
             System.out.println("0. Exit");
             System.out.print("Choice: ");
             String ch = sc.nextLine().trim();
             switch (ch) {
                 case "1": viewAllRooms();         break;
                 case "2": searchAvailableRooms(); break;
+                case "3": makeBooking();          break;
                 case "0":
                     System.out.println("Thank you! Goodbye!");
                     return;
