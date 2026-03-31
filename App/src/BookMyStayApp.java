@@ -171,36 +171,26 @@ public class BookMyStayApp {
 
     static void makeBooking() {
         System.out.println("\n===== MAKE A BOOKING =====");
-
         System.out.print("Guest Name: ");
         String name = sc.nextLine().trim();
-        if (!validateName(name)) {
-            System.out.println("[Error] Name must contain letters and spaces only."); return;
-        }
+        if (!validateName(name)) { System.out.println("[Error] Letters and spaces only."); return; }
 
         System.out.print("Room Number: ");
         String rInput = sc.nextLine().trim();
-        if (!isInteger(rInput)) {
-            System.out.println("[Error] Room number must be numeric."); return;
-        }
+        if (!isInteger(rInput)) { System.out.println("[Error] Must be numeric."); return; }
         int rNo = Integer.parseInt(rInput);
         Room room = rooms.stream().filter(r -> r.roomNumber == rNo).findFirst().orElse(null);
         if (room == null) { System.out.println("[Error] Room not found."); return; }
-        if (room.status != RoomStatus.AVAILABLE) {
-            System.out.println("[Error] Room " + rNo + " is " + room.status); return;
-        }
+        if (room.status != RoomStatus.AVAILABLE) { System.out.println("[Error] Room " + rNo + " is " + room.status); return; }
 
         System.out.print("Check-In  (YYYY-MM-DD): ");
         LocalDate ci = parseDate(sc.nextLine().trim());
-        if (ci == null) { System.out.println("[Error] Invalid date format."); return; }
+        if (ci == null) { System.out.println("[Error] Invalid date."); return; }
 
         System.out.print("Check-Out (YYYY-MM-DD): ");
         LocalDate co = parseDate(sc.nextLine().trim());
-        if (co == null) { System.out.println("[Error] Invalid date format."); return; }
-
-        if (!co.isAfter(ci)) {
-            System.out.println("[Error] Check-out must be after check-in."); return;
-        }
+        if (co == null) { System.out.println("[Error] Invalid date."); return; }
+        if (!co.isAfter(ci)) { System.out.println("[Error] Check-out must be after check-in."); return; }
 
         Booking booking = new Booking(name, room, ci, co);
         selectAddOns(booking);
@@ -224,6 +214,26 @@ public class BookMyStayApp {
         System.out.printf ("Total Revenue  : Rs.%.2f%n", revenue);
     }
 
+    static void cancelBooking() {
+        System.out.println("\n===== CANCEL BOOKING =====");
+        System.out.print("Enter Booking ID (e.g. BMS1001): ");
+        String id = sc.nextLine().trim();
+        if (!id.startsWith("BMS") || id.length() < 4) {
+            System.out.println("[Error] Invalid Booking ID format."); return;
+        }
+        for (Booking b : bookings) {
+            if (b.bookingId.equalsIgnoreCase(id)) {
+                if (b.isCancelled) { System.out.println("[Info] Already cancelled."); return; }
+                b.isCancelled = true;
+                b.room.status = RoomStatus.AVAILABLE;
+                System.out.println("[Success] Booking " + id + " cancelled.");
+                System.out.println("[Info] Room " + b.room.roomNumber + " is now AVAILABLE.");
+                return;
+            }
+        }
+        System.out.println("[Error] Booking ID not found.");
+    }
+
     static void runMainMenu() {
         while (true) {
             System.out.println("\n========= MAIN MENU =========");
@@ -231,6 +241,7 @@ public class BookMyStayApp {
             System.out.println("2. Search Available Rooms");
             System.out.println("3. Make a Booking");
             System.out.println("4. Booking History & Report");
+            System.out.println("5. Cancel a Booking");
             System.out.println("0. Exit");
             System.out.print("Choice: ");
             String ch = sc.nextLine().trim();
@@ -239,6 +250,7 @@ public class BookMyStayApp {
                 case "2": searchAvailableRooms(); break;
                 case "3": makeBooking();          break;
                 case "4": viewBookingHistory();   break;
+                case "5": cancelBooking();        break;
                 case "0":
                     System.out.println("Goodbye!");
                     return;
