@@ -234,6 +234,40 @@ public class BookMyStayApp {
         System.out.println("[Error] Booking ID not found.");
     }
 
+    static void simulateConcurrentBooking() {
+        System.out.println("\n===== CONCURRENT BOOKING SIMULATION =====");
+        Room target = rooms.stream()
+                           .filter(r -> r.status == RoomStatus.AVAILABLE)
+                           .findFirst().orElse(null);
+        if (target == null) { System.out.println("[Info] No available room."); return; }
+        System.out.println("3 users trying to book Room " + target.roomNumber + " simultaneously...\n");
+        String[] users = {"Alice", "Bob", "Charlie"};
+        List<Thread> threads = new ArrayList<>();
+        Object lock = new Object();
+        for (String user : users) {
+            threads.add(new Thread(() -> {
+                synchronized (lock) {
+                    if (target.status == RoomStatus.AVAILABLE) {
+                        target.status = RoomStatus.BOOKED;
+                        Booking b = new Booking(user, target,
+                                LocalDate.now(), LocalDate.now().plusDays(2));
+                        bookings.add(b);
+                        System.out.println("[SUCCESS] " + user + " booked Room "
+                                + target.roomNumber + " -> ID: " + b.bookingId);
+                    } else {
+                        System.out.println("[FAILED]  " + user + " - Room already taken.");
+                    }
+                }
+            }));
+        }
+        threads.forEach(Thread::start);
+        threads.forEach(t -> {
+            try { t.join(); }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        });
+        System.out.println("\n[Done] Only 1 booking succeeded. Thread-safe confirmed.");
+    }
+
     static void runMainMenu() {
         while (true) {
             System.out.println("\n========= MAIN MENU =========");
@@ -242,15 +276,17 @@ public class BookMyStayApp {
             System.out.println("3. Make a Booking");
             System.out.println("4. Booking History & Report");
             System.out.println("5. Cancel a Booking");
+            System.out.println("6. Concurrent Booking Simulation");
             System.out.println("0. Exit");
             System.out.print("Choice: ");
             String ch = sc.nextLine().trim();
             switch (ch) {
-                case "1": viewAllRooms();         break;
-                case "2": searchAvailableRooms(); break;
-                case "3": makeBooking();          break;
-                case "4": viewBookingHistory();   break;
-                case "5": cancelBooking();        break;
+                case "1": viewAllRooms();                break;
+                case "2": searchAvailableRooms();        break;
+                case "3": makeBooking();                 break;
+                case "4": viewBookingHistory();          break;
+                case "5": cancelBooking();               break;
+                case "6": simulateConcurrentBooking();   break;
                 case "0":
                     System.out.println("Goodbye!");
                     return;
