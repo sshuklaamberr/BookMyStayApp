@@ -110,7 +110,29 @@ public class BookMyStayApp {
         if (!found) System.out.println("[Info] No available rooms found.");
     }
 
-    // UC6 - Confirmation Slip
+    // UC7 - Add-On Services
+    static void selectAddOns(Booking booking) {
+        System.out.println("\n--- Add-On Services ---");
+        AddOnService[] list = AddOnService.values();
+        for (int i = 0; i < list.length; i++)
+            System.out.printf("  %d. %-20s Rs.%d%n", i + 1, list[i], list[i].price);
+        System.out.print("Select numbers (e.g. 1,3) or Enter to skip: ");
+        String input = sc.nextLine().trim();
+        if (input.isEmpty()) return;
+        for (String t : input.split(",")) {
+            try {
+                int idx = Integer.parseInt(t.trim()) - 1;
+                if (idx >= 0 && idx < list.length && !booking.addOns.contains(list[idx])) {
+                    booking.addOns.add(list[idx]);
+                    System.out.println("[Added] " + list[idx] + " - Rs." + list[idx].price);
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("[Warning] Invalid input: " + t.trim());
+            }
+        }
+        booking.calculateTotal();
+    }
+
     static void printConfirmation(Booking b) {
         long nights = ChronoUnit.DAYS.between(b.checkIn, b.checkOut);
         System.out.println("\n╔══════════════════════════════╗");
@@ -124,6 +146,11 @@ public class BookMyStayApp {
         System.out.println("  Nights      : " + nights);
         System.out.printf ("  Room Cost   : Rs.%.2f x %d = Rs.%.2f%n",
                 b.room.pricePerNight, nights, nights * b.room.pricePerNight);
+        if (!b.addOns.isEmpty()) {
+            double addOnTotal = b.addOns.stream().mapToInt(a -> a.price).sum();
+            System.out.println("  Add-Ons     : " + b.addOns);
+            System.out.printf ("  Add-On Cost : Rs.%.2f%n", addOnTotal);
+        }
         System.out.printf ("  TOTAL       : Rs.%.2f%n", b.totalAmount);
         System.out.println("  Status      : CONFIRMED");
         System.out.println("══════════════════════════════════");
@@ -150,9 +177,10 @@ public class BookMyStayApp {
         LocalDate co = LocalDate.parse(sc.nextLine().trim());
 
         Booking booking = new Booking(name, room, ci, co);
+        selectAddOns(booking);        // UC7
         room.status = RoomStatus.BOOKED;
         bookings.add(booking);
-        printConfirmation(booking); // UC6
+        printConfirmation(booking);
     }
 
     static void runMainMenu() {
