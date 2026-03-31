@@ -1,4 +1,5 @@
 import java.util.*;
+import java.io.*;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,14 +64,18 @@ public class BookMyStayApp {
         }
     }
 
-    static final List<Room>    rooms    = new ArrayList<>();
-    static final List<Booking> bookings = new ArrayList<>();
-    static final Scanner       sc       = new Scanner(System.in);
+    static final List<Room>    rooms     = new ArrayList<>();
+    static final List<Booking> bookings  = new ArrayList<>();
+    static final Scanner       sc        = new Scanner(System.in);
+    static final String        DATA_FILE = "bookings_data.csv";
 
     public static void main(String[] args) {
         initializeRooms();
+        loadData();
         showWelcomeBanner();
         runMainMenu();
+        saveData();
+        System.out.println("Thank you for using BookMyStayApp. Goodbye!");
     }
 
     static void showWelcomeBanner() {
@@ -89,6 +94,48 @@ public class BookMyStayApp {
         rooms.add(new Room(203, RoomType.DOUBLE, 2500));
         rooms.add(new Room(301, RoomType.SUITE,  5000));
         rooms.add(new Room(302, RoomType.SUITE,  5000));
+    }
+
+    static void saveData() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(DATA_FILE))) {
+            pw.println("bookingId,guestName,roomNumber,checkIn,checkOut,totalAmount,isCancelled");
+            for (Booking b : bookings)
+                pw.printf("%s,%s,%d,%s,%s,%.2f,%b%n",
+                        b.bookingId, b.guestName, b.room.roomNumber,
+                        b.checkIn, b.checkOut, b.totalAmount, b.isCancelled);
+            System.out.println("[System] Data saved to " + DATA_FILE);
+        } catch (IOException e) {
+            System.out.println("[Error] Save failed: " + e.getMessage());
+        }
+    }
+
+    static void loadData() {
+        File file = new File(DATA_FILE);
+        if (!file.exists()) return;
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            br.readLine();
+            String line;
+            int count = 0;
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",");
+                if (p.length < 7) continue;
+                int rNo = Integer.parseInt(p[2].trim());
+                Room room = rooms.stream().filter(r -> r.roomNumber == rNo).findFirst().orElse(null);
+                if (room == null) continue;
+                LocalDate ci = LocalDate.parse(p[3].trim());
+                LocalDate co = LocalDate.parse(p[4].trim());
+                Booking b    = new Booking(p[1].trim(), room, ci, co);
+                b.bookingId   = p[0].trim();
+                b.totalAmount = Double.parseDouble(p[5].trim());
+                b.isCancelled = Boolean.parseBoolean(p[6].trim());
+                if (!b.isCancelled) room.status = RoomStatus.BOOKED;
+                bookings.add(b);
+                count++;
+            }
+            if (count > 0) System.out.println("[System] " + count + " booking(s) loaded.");
+        } catch (IOException e) {
+            System.out.println("[System] Starting fresh.");
+        }
     }
 
     static void viewAllRooms() {
@@ -287,11 +334,8 @@ public class BookMyStayApp {
                 case "4": viewBookingHistory();          break;
                 case "5": cancelBooking();               break;
                 case "6": simulateConcurrentBooking();   break;
-                case "0":
-                    System.out.println("Goodbye!");
-                    return;
-                default:
-                    System.out.println("[Error] Invalid option.");
+                case "0": return;
+                default:  System.out.println("[Error] Invalid option.");
             }
         }
     }
