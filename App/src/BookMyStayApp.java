@@ -52,7 +52,7 @@ public class BookMyStayApp {
 
         void calculateTotal() {
             long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
-            totalAmount = nights * room.pricePerNight;
+            totalAmount  = nights * room.pricePerNight;
             for (AddOnService s : addOns) totalAmount += s.price;
         }
 
@@ -98,7 +98,7 @@ public class BookMyStayApp {
 
     static void searchAvailableRooms() {
         System.out.println("\n===== SEARCH AVAILABLE ROOMS =====");
-        System.out.print("Filter by type [SINGLE / DOUBLE / SUITE] or Enter for all: ");
+        System.out.print("Filter [SINGLE / DOUBLE / SUITE] or Enter for all: ");
         String filter = sc.nextLine().trim().toUpperCase();
         boolean found = false;
         for (Room r : rooms) {
@@ -110,13 +110,12 @@ public class BookMyStayApp {
         if (!found) System.out.println("[Info] No available rooms found.");
     }
 
-    // UC7 - Add-On Services
     static void selectAddOns(Booking booking) {
         System.out.println("\n--- Add-On Services ---");
         AddOnService[] list = AddOnService.values();
         for (int i = 0; i < list.length; i++)
             System.out.printf("  %d. %-20s Rs.%d%n", i + 1, list[i], list[i].price);
-        System.out.print("Select numbers (e.g. 1,3) or Enter to skip: ");
+        System.out.print("Select (e.g. 1,3) or Enter to skip: ");
         String input = sc.nextLine().trim();
         if (input.isEmpty()) return;
         for (String t : input.split(",")) {
@@ -124,10 +123,10 @@ public class BookMyStayApp {
                 int idx = Integer.parseInt(t.trim()) - 1;
                 if (idx >= 0 && idx < list.length && !booking.addOns.contains(list[idx])) {
                     booking.addOns.add(list[idx]);
-                    System.out.println("[Added] " + list[idx] + " - Rs." + list[idx].price);
+                    System.out.println("[Added] " + list[idx] + " Rs." + list[idx].price);
                 }
             } catch (NumberFormatException e) {
-                System.out.println("[Warning] Invalid input: " + t.trim());
+                System.out.println("[Warning] Invalid: " + t.trim());
             }
         }
         booking.calculateTotal();
@@ -164,11 +163,8 @@ public class BookMyStayApp {
         System.out.print("Room Number: ");
         int rNo = Integer.parseInt(sc.nextLine().trim());
         Room room = rooms.stream().filter(r -> r.roomNumber == rNo).findFirst().orElse(null);
-
-        if (room == null) { System.out.println("[Error] Room not found."); return; }
-        if (room.status != RoomStatus.AVAILABLE) {
-            System.out.println("[Error] Room not available."); return;
-        }
+        if (room == null)                        { System.out.println("[Error] Room not found.");     return; }
+        if (room.status != RoomStatus.AVAILABLE) { System.out.println("[Error] Room not available."); return; }
 
         System.out.print("Check-In  (YYYY-MM-DD): ");
         LocalDate ci = LocalDate.parse(sc.nextLine().trim());
@@ -177,10 +173,25 @@ public class BookMyStayApp {
         LocalDate co = LocalDate.parse(sc.nextLine().trim());
 
         Booking booking = new Booking(name, room, ci, co);
-        selectAddOns(booking);        // UC7
+        selectAddOns(booking);
         room.status = RoomStatus.BOOKED;
         bookings.add(booking);
         printConfirmation(booking);
+    }
+
+    static void viewBookingHistory() {
+        System.out.println("\n===== BOOKING HISTORY =====");
+        if (bookings.isEmpty()) { System.out.println("[Info] No bookings yet."); return; }
+        for (Booking b : bookings) System.out.println(b);
+        long active    = bookings.stream().filter(b -> !b.isCancelled).count();
+        long cancelled = bookings.stream().filter(b ->  b.isCancelled).count();
+        double revenue = bookings.stream().filter(b -> !b.isCancelled)
+                                          .mapToDouble(b -> b.totalAmount).sum();
+        System.out.println("\n------- Report -------");
+        System.out.println("Total Bookings : " + bookings.size());
+        System.out.println("Active         : " + active);
+        System.out.println("Cancelled      : " + cancelled);
+        System.out.printf ("Total Revenue  : Rs.%.2f%n", revenue);
     }
 
     static void runMainMenu() {
@@ -189,6 +200,7 @@ public class BookMyStayApp {
             System.out.println("1. View All Rooms");
             System.out.println("2. Search Available Rooms");
             System.out.println("3. Make a Booking");
+            System.out.println("4. Booking History & Report");
             System.out.println("0. Exit");
             System.out.print("Choice: ");
             String ch = sc.nextLine().trim();
@@ -196,8 +208,9 @@ public class BookMyStayApp {
                 case "1": viewAllRooms();         break;
                 case "2": searchAvailableRooms(); break;
                 case "3": makeBooking();          break;
+                case "4": viewBookingHistory();   break;
                 case "0":
-                    System.out.println("Thank you! Goodbye!");
+                    System.out.println("Goodbye!");
                     return;
                 default:
                     System.out.println("[Error] Invalid option.");
